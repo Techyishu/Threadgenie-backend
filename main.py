@@ -60,36 +60,35 @@ def generate_thread(content: str, thread_length: int = 5, tone: str = "neutral",
             {writing_style}
             """
         
-        prompt = f"""Create a focused Twitter thread that directly addresses and expands on the given content. 
-        Format each tweet with a number prefix like "1." at the start.
+        prompt = f"""Create an engaging Twitter thread that feels natural and conversational while covering the given content.
+        Each tweet should start with a number (1., 2., etc.).
 
         {style_instruction}
 
-        Key Requirements:
-        1. First tweet (1. 🧵) must directly introduce the main topic from the content
-        2. Each tweet must be under 280 characters
-        3. Stay focused on the specific topic/content provided
-        4. Don't include generic advice or unrelated points
-        5. Use concrete examples and points from the given content
-        6. Each tweet should build on the specific topic, not general statements
+        Key Points:
+        • First tweet should hook readers naturally - avoid "In this thread..." or "Let's talk about..."
+        • Jump straight into the topic with an interesting angle or surprising fact
+        • Each tweet must be under 280 characters
+        • Focus on specific insights from the content
+        • Use real examples and details from the given content
         
-        Tweet Structure:
-        • Tweet 1: Hook that directly states what will be covered, based on the input content
-        • Middle Tweets: Specific points, examples, and insights from the content
-        • Final Tweet: Conclusion with key takeaways from the content + relevant hashtags
+        Thread Flow:
+        • Tweet 1: Start with an attention-grabbing insight or statement that makes people want to read more
+        • Middle Tweets: Break down key points with specific examples
+        • Final Tweet: Wrap up with main takeaways + relevant hashtags
         
-        Format Guidelines:
-        • Start each tweet with its number (1., 2., 3., etc.)
-        • Use 1-2 relevant emojis per tweet
-        • Include bullet points or numbered lists when listing multiple points
-        • Keep the focus tight and relevant to the input content
+        Style Guide:
+        • Write like you're talking to a friend
+        • Use natural language and avoid corporate/formal phrases
+        • Include 1-2 fitting emojis per tweet
+        • Break complex ideas into digestible points
         
-        Remember:
-        • Don't generate generic advice
-        • Stay strictly focused on the input content
-        • Each tweet must directly relate to the main topic
-        • Number of tweets must be exactly {thread_length}
+        Important:
+        • Keep everything specific to the input content
+        • Generate exactly {thread_length} tweets
         • {tone_instructions.get(tone, "Use a balanced tone")}
+        • Avoid phrases like "Thread 🧵" or "Let me explain"
+        • Don't use generic transitions between tweets
 
         Content to transform into a thread:
         {content}"""
