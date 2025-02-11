@@ -35,6 +35,17 @@ class ContentRequest(BaseModel):
     tone: str = "neutral"  # Default tone
     writing_style: str = ""  # Optional writing style
 
+class TweetRequest(BaseModel):
+    topic: str
+    tone: str = "neutral"
+    writing_style: str = ""
+
+class BioRequest(BaseModel):
+    name: str
+    expertise: str
+    interests: list[str]
+    tone: str = "professional"
+
 def generate_thread(content: str, thread_length: int = 5, tone: str = "neutral", writing_style: str = "") -> list:
     try:
         logger.info(f"Attempting to generate thread with GPT (length: {thread_length}, tone: {tone})")
@@ -94,7 +105,7 @@ def generate_thread(content: str, thread_length: int = 5, tone: str = "neutral",
         {content}"""
         
         response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": """You are an expert content strategist who creates highly focused Twitter threads.
                 Your threads are known for:
@@ -151,6 +162,105 @@ def generate_thread(content: str, thread_length: int = 5, tone: str = "neutral",
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error generating thread: {str(e)}")
 
+def generate_single_tweet(topic: str, tone: str = "neutral", writing_style: str = "") -> str:
+    try:
+        logger.info(f"Generating single tweet for topic: {topic}")
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        tone_instructions = {
+            "neutral": "Use a balanced and objective tone",
+            "formal": "Use a professional and academic tone",
+            "casual": "Use a friendly and conversational tone",
+            "enthusiastic": "Use an energetic and excited tone"
+        }
+        
+        style_instruction = f"\n{writing_style}" if writing_style else ""
+        
+        prompt = f"""Create an engaging tweet about the following topic.
+
+        Topic: {topic}
+
+        Requirements:
+        • Must be under 280 characters
+        • Include 1-2 relevant emojis
+        • Be specific and informative
+        • {tone_instructions.get(tone, "Use a balanced tone")}
+        {style_instruction}
+
+        Style Guide:
+        • Write naturally and conversationally
+        • Avoid hashtag spam
+        • Make it shareable and engaging
+        • Focus on providing value
+        """
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a social media expert who creates engaging tweets."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=200
+        )
+        
+        tweet = response.choices[0].message.content.strip()
+        return tweet
+        
+    except Exception as e:
+        logger.error(f"Error generating tweet: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating tweet: {str(e)}")
+
+def generate_bio(name: str, expertise: str, interests: list[str], tone: str = "professional") -> str:
+    try:
+        logger.info(f"Generating bio for {name}")
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        tone_instructions = {
+            "professional": "Keep it formal and business-focused",
+            "casual": "Make it friendly and approachable",
+            "creative": "Add personality and creative flair",
+            "technical": "Focus on technical expertise and achievements"
+        }
+        
+        interests_str = ", ".join(interests)
+        
+        prompt = f"""Create a compelling Twitter bio for:
+
+        Name: {name}
+        Expertise: {expertise}
+        Interests: {interests_str}
+
+        Requirements:
+        • Maximum 160 characters
+        • Include 1-2 relevant emojis
+        • {tone_instructions.get(tone, "Keep it professional")}
+        • Highlight expertise and personality
+        
+        Style Guide:
+        • Be concise but informative
+        • Show personality while maintaining professionalism
+        • Include key achievements/roles
+        • Make it memorable
+        """
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert at creating engaging social media bios."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=200
+        )
+        
+        bio = response.choices[0].message.content.strip()
+        return bio
+        
+    except Exception as e:
+        logger.error(f"Error generating bio: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating bio: {str(e)}")
+
 @app.post("/generate-thread")
 async def create_thread(request: ContentRequest):
     try:
@@ -166,6 +276,37 @@ async def create_thread(request: ContentRequest):
     except Exception as e:
         logger.error(f"Error in create_thread endpoint: {str(e)}")
         logger.error(traceback.format_exc())
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-tweet")
+async def create_tweet(request: TweetRequest):
+    try:
+        tweet = generate_single_tweet(
+            topic=request.topic,
+            tone=request.tone,
+            writing_style=request.writing_style
+        )
+        return {"tweet": tweet}
+    except Exception as e:
+        logger.error(f"Error in create_tweet endpoint: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-bio")
+async def create_bio(request: BioRequest):
+    try:
+        bio = generate_bio(
+            name=request.name,
+            expertise=request.expertise,
+            interests=request.interests,
+            tone=request.tone
+        )
+        return {"bio": bio}
+    except Exception as e:
+        logger.error(f"Error in create_bio endpoint: {str(e)}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e)) 
